@@ -4,7 +4,7 @@
   The data Api changed and use it this way:
   
   ```
-  <Swiper onPress={()=>Store.toggleTitle()} data={Store.imageUrls} index={props.index} style={styles.wrapper} renderPagination={renderPagination}>
+  <Swiper onPress={()=>alert('press')} data={Store.imageUrls} index={props.index} style={styles.wrapper} renderPagination={renderPagination}>
   </Swiper>
   ```
   
