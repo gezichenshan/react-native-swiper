@@ -11,8 +11,11 @@ import {
   TouchableOpacity,
   ViewPagerAndroid,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from 'react-native'
+
+import PhotoView from 'react-native-photo-view'
 
 const { width, height } = Dimensions.get('window')
 
@@ -87,7 +90,18 @@ const styles = {
     fontSize: 50,
     color: '#007aff',
     fontFamily: 'Arial'
-  }
+  },
+  photo: {
+    // width,
+    // height,
+    flex: 1
+  },
+  slide: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent'
+  },
 }
 
 // missing `module.exports = exports['default'];` with babel6
@@ -99,7 +113,6 @@ export default class extends Component {
    */
   static propTypes = {
     horizontal: PropTypes.bool,
-    children: PropTypes.node.isRequired,
     style: View.propTypes.style,
     pagingEnabled: PropTypes.bool,
     showsHorizontalScrollIndicator: PropTypes.bool,
@@ -164,6 +177,19 @@ export default class extends Component {
   loopJumpTimer = null
 
   componentWillReceiveProps (nextProps) {
+    // let { width, height } = Dimensions.get('window')
+    // this.setState({width:width})
+    // this.setState({height:height})
+    // this.state.width = nextProps.maxWidth
+    // this.state.width = nextProps.maxWidth
+    // console.log(344443344)
+    // console.log(nextProps)
+    this.setState({width:nextProps.maxWidth})
+    this.setState({height:nextProps.maxHeight})
+
+    // console.log(nextProps)
+    // console.log(this.state.width)
+    // console.log(this.state.height)
     const sizeChanged = (nextProps.width || width) !== this.state.width ||
                         (nextProps.height || height) !== this.state.height
     if (!nextProps.autoplay && this.autoplayTimer) clearTimeout(this.autoplayTimer)
@@ -192,8 +218,7 @@ export default class extends Component {
       isScrolling: false
     }
 
-    initState.total = props.children ? props.children.length || 1 : 0
-
+    initState.total = props.data ? props.data.length || 1 : 0
     if (state.total === initState.total) {
       // retain the index
       initState.index = state.index
@@ -306,14 +331,14 @@ export default class extends Component {
    */
   onScrollEndDrag = e => {
     const { contentOffset } = e.nativeEvent
-    const { horizontal, children } = this.props
+    const { horizontal, data } = this.props
     const { index } = this.state
     const { offset } = this.internals
     const previousOffset = horizontal ? offset.x : offset.y
     const newOffset = horizontal ? contentOffset.x : contentOffset.y
 
     if (previousOffset === newOffset &&
-      (index === 0 || index === children.length - 1)) {
+      (index === 0 || index === data.length - 1)) {
       this.internals.isScrolling = false
     }
   }
@@ -385,6 +410,7 @@ export default class extends Component {
    */
 
   scrollBy = (index, animated = true) => {
+    console.log(44444444444444)
     if (this.internals.isScrolling || this.state.total < 2) return
     const state = this.state
     const diff = (this.props.loop ? 1 : 0) + index + this.state.index
@@ -544,20 +570,39 @@ export default class extends Component {
     )
   }
 
-  renderScrollView = pages => {
+  renderItem = (item,index) => {
+    const props = this.props
+    return (
+          <View key={index} style={styles.slide}>
+            <PhotoView
+            source={{uri: item}}
+            resizeMode='contain'
+            minimumZoomScale={1}
+            maximumZoomScale={3}
+            androidScaleType='center'
+            onTap={this.props.onPress}
+            style={[styles.photo,{width:props.maxWidth,height:props.maxHeight}]} />
+          </View>
+    )
+  }
+
+  renderScrollView = (data) => {
     if (Platform.OS === 'ios') {
-      return (
-        <ScrollView ref='scrollView'
-          {...this.props}
-          {...this.scrollViewPropOverrides()}
-          contentContainerStyle={[styles.wrapper, this.props.style]}
-          contentOffset={this.state.offset}
-          onScrollBeginDrag={this.onScrollBegin}
-          onMomentumScrollEnd={this.onScrollEnd}
-          onScrollEndDrag={this.onScrollEndDrag}>
-          {pages}
-        </ScrollView>
-       )
+        return (
+          <FlatList
+            ref='scrollView'
+            {...this.props}
+            {...this.scrollViewPropOverrides()}
+            data={data}
+            extraData={this.state}
+            keyExtractor={item=>item}
+            horizontal={true}
+            renderItem={({item,index}) => this.renderItem(item,index)}
+            contentOffset={this.state.offset}
+            onScrollBeginDrag={this.onScrollBegin}
+            onMomentumScrollEnd={this.onScrollEnd}
+            onScrollEndDrag={this.onScrollEndDrag}/>
+        )
     }
     return (
       <ViewPagerAndroid ref='scrollView'
@@ -577,17 +622,15 @@ export default class extends Component {
   render () {
     const state = this.state
     const props = this.props
-    const children = props.children
     const index = state.index
     const total = state.total
     const loop = props.loop
-    // let dir = state.dir
-    // let key = 0
+    const data = props.data
     const loopVal = loop ? 1 : 0
 
     let pages = []
 
-    const pageStyle = [{width: state.width, height: state.height}, styles.slide]
+    let pageStyle = [{width: props.viewWidth, height: props.viewHeight}, styles.slide]
     const pageStyleLoading = {
       width: this.state.width,
       height: this.state.height,
@@ -595,45 +638,15 @@ export default class extends Component {
       alignItems: 'center'
     }
 
-    // For make infinite at least total > 1
-    if (total > 1) {
-      // Re-design a loop model for avoid img flickering
-      pages = Object.keys(children)
-      if (loop) {
-        pages.unshift(total - 1 + '')
-        pages.push('0')
-      }
-
-      pages = pages.map((page, i) => {
-        if (props.loadMinimal) {
-          if (i >= (index + loopVal - props.loadMinimalSize) &&
-            i <= (index + loopVal + props.loadMinimalSize)) {
-            return <View style={pageStyle} key={i}>{children[page]}</View>
-          } else {
-            return (
-              <View style={pageStyleLoading} key={`loading-${i}`}>
-                {props.loadMinimalLoader ? props.loadMinimalLoader : <ActivityIndicator />}
-              </View>
-            )
-          }
-        } else {
-          return <View style={pageStyle} key={i}>{children[page]}</View>
-        }
-      })
-    } else {
-      pages = <View style={pageStyle} key={0}>{children}</View>
-    }
-
     return (
       <View style={[styles.container, {
         width: state.width,
         height: state.height
       }]}>
-        {this.renderScrollView(pages)}
+        {this.renderScrollView(data)}
         {props.showsPagination && (props.renderPagination
           ? this.props.renderPagination(state.index, state.total, this)
           : this.renderPagination())}
-        {this.renderTitle()}
         {this.props.showsButtons && this.renderButtons()}
       </View>
     )
