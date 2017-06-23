@@ -4,7 +4,7 @@
   The data Api changed and use it this way:
   
   ```
-  <Swiper loadMinimal={true} onPress={()=>Store.toggleTitle()} loop={false} data={Store.imageUrls} loadMinimalSize={3} index=       {props.index} style={styles.wrapper} renderPagination={renderPagination}>
+  <Swiper onPress={()=>Store.toggleTitle()} data={Store.imageUrls} index={props.index} style={styles.wrapper} renderPagination={renderPagination}>
   </Swiper>
   ```
   
