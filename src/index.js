@@ -177,19 +177,8 @@ export default class extends Component {
   loopJumpTimer = null
 
   componentWillReceiveProps (nextProps) {
-    // let { width, height } = Dimensions.get('window')
-    // this.setState({width:width})
-    // this.setState({height:height})
-    // this.state.width = nextProps.maxWidth
-    // this.state.width = nextProps.maxWidth
-    // console.log(344443344)
-    // console.log(nextProps)
     this.setState({width:nextProps.maxWidth})
     this.setState({height:nextProps.maxHeight})
-
-    // console.log(nextProps)
-    // console.log(this.state.width)
-    // console.log(this.state.height)
     const sizeChanged = (nextProps.width || width) !== this.state.width ||
                         (nextProps.height || height) !== this.state.height
     if (!nextProps.autoplay && this.autoplayTimer) clearTimeout(this.autoplayTimer)
@@ -410,7 +399,6 @@ export default class extends Component {
    */
 
   scrollBy = (index, animated = true) => {
-    console.log(44444444444444)
     if (this.internals.isScrolling || this.state.total < 2) return
     const state = this.state
     const diff = (this.props.loop ? 1 : 0) + index + this.state.index
