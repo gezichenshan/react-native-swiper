@@ -1,4 +1,8 @@
 <p align="center">
+  This is a fork of leecade@react-native-swiper with the ScrollView be replaced with FlatList in case of big gallary.
+</p>
+
+<p align="center">
   <img alt="react-native-swiper" src="http://i.imgur.com/P4cRUgD.png" width="208">
 </p>
 
