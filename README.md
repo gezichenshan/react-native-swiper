@@ -2,8 +2,10 @@
   This is a fork of leecade@react-native-swiper with the ScrollView be replaced with FlatList in case of big gallary.
   Maybe I should call it react-native-swiper-flatlist for photo view.
   The data Api changed and use it this way:
+  ```
   <Swiper loadMinimal={true} onPress={()=>Store.toggleTitle()} loop={false} data={Store.imageUrls} loadMinimalSize={3} index=       {props.index} style={styles.wrapper} renderPagination={renderPagination}>
   </Swiper>
+  ```
 </p>
 
 <p align="center">
