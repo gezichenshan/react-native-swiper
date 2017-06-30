@@ -179,6 +179,7 @@ export default class extends Component {
   componentWillReceiveProps (nextProps) {
     this.setState({width:nextProps.maxWidth})
     this.setState({height:nextProps.maxHeight})
+    this.setState({offset:{x:nextProps.index * nextProps.maxWidth,y:0}})
     const sizeChanged = (nextProps.width || width) !== this.state.width ||
                         (nextProps.height || height) !== this.state.height
     if (!nextProps.autoplay && this.autoplayTimer) clearTimeout(this.autoplayTimer)
@@ -251,7 +252,7 @@ export default class extends Component {
   loopJump = () => {
     if (!this.state.loopJump) return
     const i = this.state.index + (this.props.loop ? 1 : 0)
-    const scrollView = this.refs.scrollView
+    const scrollView = this.scrollView
     this.loopJumpTimer = setTimeout(() => scrollView.setPageWithoutAnimation &&
       scrollView.setPageWithoutAnimation(i), 50)
   }
@@ -351,7 +352,6 @@ export default class extends Component {
     // the variation of `index` more than 1.
     // parseInt() ensures it's always an integer
     index = parseInt(index + Math.round(diff / step))
-
     if (this.props.loop) {
       if (index <= -1) {
         index = state.total - 1
@@ -408,9 +408,9 @@ export default class extends Component {
     if (state.dir === 'y') y = diff * state.height
 
     if (Platform.OS === 'android') {
-      this.refs.scrollView && this.refs.scrollView[animated ? 'setPage' : 'setPageWithoutAnimation'](diff)
+      this.scrollView && this.scrollView[animated ? 'setPage' : 'setPageWithoutAnimation'](diff)
     } else {
-      this.refs.scrollView && this.refs.scrollView.scrollTo({ x, y, animated })
+      this.scrollView && this.scrollView.scrollTo({ x, y, animated })
     }
 
     // update scroll state
@@ -573,12 +573,23 @@ export default class extends Component {
           </View>
     )
   }
+  onLayout(e) {
+    let {width, height} = e.nativeEvent.layout;
+    let index = this.state.index
+    this.setState(
+      {
+        width:this.props.maxWidth,
+        height:this.props.maxHeight,
+        offset:{x:width*this.props.index,y:0}
+      }
+    )
+  }
 
   renderScrollView = (data) => {
-    if (Platform.OS === 'ios') {
         return (
           <FlatList
-            ref='scrollView'
+            ref={(scrollView) => {this.scrollView = scrollView}}
+            onLayout={this.onLayout.bind(this)}
             {...this.props}
             {...this.scrollViewPropOverrides()}
             data={data}
@@ -587,20 +598,15 @@ export default class extends Component {
             horizontal={true}
             renderItem={({item,index}) => this.renderItem(item,index)}
             contentOffset={this.state.offset}
+            initialScrollIndex={this.state.index}
+            getItemLayout={(data, index) => (
+              // 55 是被渲染 item 的高度 ITEM_HEIGHT。
+              {length: this.props.maxWidth, offset: this.props.maxWidth * index, index}
+            )}
             onScrollBeginDrag={this.onScrollBegin}
             onMomentumScrollEnd={this.onScrollEnd}
             onScrollEndDrag={this.onScrollEndDrag}/>
         )
-    }
-    return (
-      <ViewPagerAndroid ref='scrollView'
-        {...this.props}
-        initialPage={this.props.loop ? this.state.index + 1 : this.state.index}
-        onPageSelected={this.onScrollEnd}
-        style={{flex: 1}}>
-        {pages}
-      </ViewPagerAndroid>
-    )
   }
 
   /**
@@ -615,7 +621,6 @@ export default class extends Component {
     const loop = props.loop
     const data = props.data
     const loopVal = loop ? 1 : 0
-
     let pages = []
 
     let pageStyle = [{width: props.viewWidth, height: props.viewHeight}, styles.slide]
